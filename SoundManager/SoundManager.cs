@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Timeline;
 
 public class SoundManager : MonoBehaviour
 {
@@ -23,6 +24,8 @@ public class SoundManager : MonoBehaviour
 
     AudioMixer masterBus;
     BGMList bgmList;
+    TimelineAsset[] bgmLanes;
+    
 
     [SerializeField] const float duckVolumeRate = 0.5f;
 
@@ -39,14 +42,51 @@ public class SoundManager : MonoBehaviour
         masterBus.SetFloat("DuckVolume", duckVolumeDB);
     }
 
+    SortedList<string, List<AudioSource>> loadedBGMList;
+    void BGMLoad(string dictKey) 
+    {
+        AudioClip[] audioClips = Resources.LoadAll("BGM" + dictKey) as AudioClip[];
+        List<AudioSource> audioSources = new List<AudioSource>();
+        foreach(AudioClip audioClip in audioClips) 
+        {
+            AudioSource audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.clip = audioClip;
+            audioSources.Add(audioSource);
+        }
+        loadedBGMList.Add(dictKey, audioSources);
+    }
+
+    int flip = 0;
+    void PlayBGM(string dictKey) 
+    {
+        if(loadedBGMList.Count == 0) //現在BGMが鳴っていないとき
+        {
+            BGMLoad(dictKey);
+            //Timelineの初期化
+            AudioTrack[] audioTracks = bgmLanes[0].GetRootTracks() as AudioTrack[];
+            foreach(AudioTrack audioTrack in audioTracks) 
+            {
+                bgmLanes[0].DeleteTrack(audioTrack);
+            }
+            //AudioTrackの作成
+            foreach(AudioSource audioSource in loadedBGMList[dictKey]) 
+            {
+                bgmLanes[0].CreateTrack<AudioTrack>();
+            }
+            audioTracks = bgmLanes[0].GetRootTracks() as AudioTrack[];
+        }
+        else 
+        {
+
+        }
+    }
+
     void Awake()
     {
         masterBus = Resources.Load("AudioMasterBus") as AudioMixer;
         SetDuckVolume(duckVolumeRate);
         bgmList = Resources.Load("BGM/BGMList") as BGMList;
+        bgmLanes = Resources.LoadAll("BGMTimeLline") as TimelineAsset[];
     }
-    void Start()
-    {
 
-    }
 }
