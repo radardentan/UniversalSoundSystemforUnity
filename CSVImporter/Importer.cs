@@ -8,7 +8,7 @@ using System.Linq;
 
 public class Importer : AssetPostprocessor
 {
-    string targetFormat = ".csv";
+    readonly string targetFormat = ".csv";
 
 
 
