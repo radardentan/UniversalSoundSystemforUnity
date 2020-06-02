@@ -4,6 +4,7 @@ using System.IO;
 using UnityEngine;
 using UnityEditor;
 using System;
+using System.Linq;
 
 public class Importer : AssetPostprocessor
 {
@@ -34,7 +35,7 @@ public class Importer : AssetPostprocessor
                 return type;
             }
 
-            void ProcessingData<T>(Action action)
+            IEnumerable<List<string>> ProcessingData<T>()
                 where T : ScriptableObject
             {
 
@@ -46,7 +47,39 @@ public class Importer : AssetPostprocessor
                     {
                         string line = stream.ReadLine();
                         string[] data = line.Split(',');
-                        action();
+
+                        //","への対応
+                        List<string> dataList = new List<string>(data);
+                        for(int i = 0; i < dataList.Count; i++) 
+                        {
+                            if(dataList[i].Length > 0 && dataList[i].TrimStart()[0] == '"') 
+                            {
+                                dataList[i].TrimStart();
+
+                                if(dataList[i].TrimEnd()[dataList[i].Length - 1] == '"') 
+                                {
+                                    dataList[i].TrimEnd();
+                                    dataList[i].Remove(0, 1);
+                                    dataList[i].Remove(dataList[i].Length - 1, 1);
+                                    continue;
+                                }
+
+                                while (true) 
+                                {
+                                    dataList[i] += "," + dataList[i + 1];
+                                    dataList.RemoveAt(i + 1);
+
+                                    if(dataList[i].TrimEnd()[dataList[i].Length - 1] == '"') 
+                                    {
+                                        dataList[i].TrimEnd();
+                                        dataList[i].Remove(0, 1);
+                                        dataList[i].Remove(dataList[i].Length - 1, 1);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        yield return dataList;                
                     }
                 }
             }
@@ -55,14 +88,21 @@ public class Importer : AssetPostprocessor
             {
                 BGMList bgmList = Initialize<BGMList>();
                 bgmList.Params.Clear();
-                ProcessingData<BGMList>(() =>
+                foreach(List<string> data in ProcessingData<BGMList>()) 
                 {
                     BGMList.Param param = new BGMList.Param()
                     {
-
+                        dictKey = data[0],
+                        songTitle = data[1],
+                        Tags = data[2].Split(',').ToList(),
+                        BPM = int.Parse(data[3]),
+                        numBeatsPerSegments = (int.Parse(data[4].Split('/')[0]), int.Parse(data[4].Split('/')[1])),
+                        loopTimeMarkers = (int.Parse(data[5].Split(',')[0]), int.Parse(data[5].Split(',')[1])),
+                        SectionMarkers = data[6].Split(',').ToList().ConvertAll(a => float.Parse(a)),
+                        subTrackTimeMarkers = data.GetRange(7, data.Count - 7).Select(x => (float.Parse(x.Split(',')[0]), float.Parse(x.Split(',')[1]))).ToList()
                     };
                     bgmList.Params.Add(param);
-                });
+                }
             }
 
 
