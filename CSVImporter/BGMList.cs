@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using UnityEngine;
+using TMPro;
 
 public class BGMList : ScriptableObject
 {
@@ -25,20 +26,23 @@ public class BGMList : ScriptableObject
         {
             if (!dictKey.Equals(other.dictKey)) return false;
             if (!songTitle.Equals(other.songTitle)) return false;
-            for(int i = 0; i < Tags.Count; i++) 
+            if (!Tags.Count.Equals(other.Tags.Count)) return false;
+            if (!sectionMarkers.Count.Equals(other.sectionMarkers.Count)) return false;
+            if (!subTrackTimeMarkers.Count.Equals(other.subTrackTimeMarkers.Count)) return false;
+            for (int i = 0; i < Tags.Count; i++)
             {
                 if (!Tags[i].Equals(other.Tags[i])) return false;
             }
-            if (!BPM.Equals(other.BPM)) return false;
-            if (!numBeatsPerSegments.Equals(other.numBeatsPerSegments)) return false;
-            for(int i = 0; i < sectionMarkers.Count; i++) 
+            for (int i = 0; i < sectionMarkers.Count; i++)
             {
                 if (!sectionMarkers[i].Equals(other.sectionMarkers[i])) return false;
             }
-            for(int i=0; i < subTrackTimeMarkers.Count; i++) 
+            for (int i = 0; i < subTrackTimeMarkers.Count; i++)
             {
-                if (subTrackTimeMarkers[i].Equals(other.subTrackTimeMarkers)) return false;
+                if (!subTrackTimeMarkers[i].Equals(other.subTrackTimeMarkers[i])) return false;
             }
+            if (!BPM.Equals(other.BPM)) return false;
+            if (!numBeatsPerSegments.Equals(other.numBeatsPerSegments)) return false;
             return true;
         }
     }
