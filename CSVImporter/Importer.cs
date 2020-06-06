@@ -5,12 +5,92 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 
 public class Importer : AssetPostprocessor
 {
     readonly string targetFormat = ".csv";
 
+    //アセットがなければ作成
+    static T Initialize<T>(string exportedFile)
+        where T : ScriptableObject
+    {
+        T type = AssetDatabase.LoadAssetAtPath<T>(exportedFile);
+        if (type == null)
+        {
+            type = ScriptableObject.CreateInstance<T>();
+            AssetDatabase.CreateAsset(type, exportedFile);
+        }
+        return type;
+    }
 
+    //データのScriptableObjectへの格納
+    IEnumerable<List<string>> ProcessingData<T>(string asset)
+        where T : ScriptableObject
+    {
+
+        using (StreamReader stream = new StreamReader(asset))
+        {
+            stream.ReadLine();  //ヘッダを読み飛ばす
+
+            while (!stream.EndOfStream)
+            {
+                string line = stream.ReadLine();
+                string[] data = line.Split(',');
+
+                //","への対応
+                List<string> dataList = new List<string>(data);
+                for (int i = 0; i < dataList.Count; i++)
+                {
+                    if (dataList[i].Length > 0 && dataList[i].TrimStart()[0] == '"')
+                    {
+                        dataList[i].TrimStart();
+
+                        if (dataList[i].TrimEnd()[dataList[i].Length - 1] == '"')
+                        {
+                            dataList[i].TrimEnd();
+                            dataList[i].Remove(0, 1);
+                            dataList[i].Remove(dataList[i].Length - 1, 1);
+                            continue;
+                        }
+
+                        while (true)
+                        {
+                            dataList[i] += "," + dataList[i + 1];
+                            dataList.RemoveAt(i + 1);
+
+                            if (dataList[i].TrimEnd()[dataList[i].Length - 1] == '"')
+                            {
+                                dataList[i].TrimEnd();
+                                dataList[i].Remove(0, 1);
+                                dataList[i].Remove(dataList[i].Length - 1, 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+                yield return dataList;
+            }
+        }
+    }
+    //データの比較
+    bool DataComparison<T>(T obj1, T obj2) 
+    {
+        Type type = obj1.GetType();
+        string obj1Str;
+        string obj2Str;
+
+        //クラスの変数を文字列化して比較したい
+        foreach(FieldInfo field in type.GetFields()) 
+        {
+            obj1Str = field.GetValue(obj1).ToString();
+            obj2Str = field.GetValue(obj2).ToString();
+
+            if (!obj1Str.Equals(obj2Str)) return false;
+        }        
+        return true;
+    }
 
     public void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedAssetPaths)
     {
@@ -22,73 +102,11 @@ public class Importer : AssetPostprocessor
             string targetFile = Path.GetFileNameWithoutExtension(asset);
             string exportedFile = asset.Replace(targetFormat, ".asset");
 
-            //アセットがなければ作成
-            T Initialize<T>()
-                where T : ScriptableObject
-            {
-                T type = AssetDatabase.LoadAssetAtPath<T>(exportedFile);
-                if (type == null)
-                {
-                    type = ScriptableObject.CreateInstance<T>();
-                    AssetDatabase.CreateAsset(type, exportedFile);
-                }
-                return type;
-            }
-
-            IEnumerable<List<string>> ProcessingData<T>()
-                where T : ScriptableObject
-            {
-
-                using (StreamReader stream = new StreamReader(asset))
-                {
-                    stream.ReadLine();  //ヘッダを読み飛ばす
-
-                    while (!stream.EndOfStream)
-                    {
-                        string line = stream.ReadLine();
-                        string[] data = line.Split(',');
-
-                        //","への対応
-                        List<string> dataList = new List<string>(data);
-                        for(int i = 0; i < dataList.Count; i++) 
-                        {
-                            if(dataList[i].Length > 0 && dataList[i].TrimStart()[0] == '"') 
-                            {
-                                dataList[i].TrimStart();
-
-                                if(dataList[i].TrimEnd()[dataList[i].Length - 1] == '"') 
-                                {
-                                    dataList[i].TrimEnd();
-                                    dataList[i].Remove(0, 1);
-                                    dataList[i].Remove(dataList[i].Length - 1, 1);
-                                    continue;
-                                }
-
-                                while (true) 
-                                {
-                                    dataList[i] += "," + dataList[i + 1];
-                                    dataList.RemoveAt(i + 1);
-
-                                    if(dataList[i].TrimEnd()[dataList[i].Length - 1] == '"') 
-                                    {
-                                        dataList[i].TrimEnd();
-                                        dataList[i].Remove(0, 1);
-                                        dataList[i].Remove(dataList[i].Length - 1, 1);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        yield return dataList;                
-                    }
-                }
-            }
-
             if(targetFile == "BGMList") 
             {
-                BGMList bgmList = Initialize<BGMList>();
+                BGMList bgmList = Initialize<BGMList>(exportedFile);
                 bgmList.Params.Clear();
-                foreach(List<string> data in ProcessingData<BGMList>()) 
+                foreach(List<string> data in ProcessingData<BGMList>(asset)) 
                 {
                     BGMList.Param param = new BGMList.Param()
                     {
@@ -102,6 +120,16 @@ public class Importer : AssetPostprocessor
                         subTrackTimeMarkers = data.GetRange(7, data.Count - 7).Select(x => (float.Parse(x.Split(',')[0]), float.Parse(x.Split(',')[1]))).ToList()
                     };
                     bgmList.Params.Add(param);
+
+                    //ここに比較処理を挟みたい
+                    BGMList.Param checkedParam = Initialize<BGMList.Param>(param.dictKey);  //ファイル名がdictkeyのScriptableObjectの読込/生成
+                    bool isDataChanged = DataComparison<BGMList.Param>(param, checkedParam);
+                    if (!isDataChanged) 
+                    {
+                        checkedParam = param;
+
+                        //TimelineAssetの生成
+                    }
                 }
             }
 

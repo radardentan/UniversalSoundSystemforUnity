@@ -1,14 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System;
+using System.Reflection;
 using UnityEngine;
 
 public class BGMList : ScriptableObject
 {
-    public List<Entity.Param> Params;
+    public List<Param> Params;
 
-
-
-    public class Param : Entity.Param
+    public class Param : ScriptableObject
     {
         public string dictKey;
         public string songTitle;
@@ -20,5 +20,7 @@ public class BGMList : ScriptableObject
         public (float loopStartTime, float loopEndTime) loopTimeMarkers;
         public List<float> SectionMarkers;
         public List<(float startTime, float endTime)> subTrackTimeMarkers;
+        
     }
 }
+
