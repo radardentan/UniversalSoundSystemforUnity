@@ -61,19 +61,7 @@ public class SoundManager : MonoBehaviour
     {
         if(loadedBGMList.Count == 0) //現在BGMが鳴っていないとき
         {
-            BGMLoad(dictKey);
-            //Timelineの初期化
-            AudioTrack[] audioTracks = bgmLanes[0].GetRootTracks() as AudioTrack[];
-            foreach(AudioTrack audioTrack in audioTracks) 
-            {
-                bgmLanes[0].DeleteTrack(audioTrack);
-            }
-            //AudioTrackの作成
-            foreach(AudioSource audioSource in loadedBGMList[dictKey]) 
-            {
-                bgmLanes[0].CreateTrack<AudioTrack>();
-            }
-            audioTracks = bgmLanes[0].GetRootTracks() as AudioTrack[];
+
         }
         else 
         {

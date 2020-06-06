@@ -5,8 +5,7 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Linq;
-using System.Reflection;
-using System.Text;
+using UnityEngine.Timeline;
 
 public class Importer : AssetPostprocessor
 {
@@ -74,6 +73,7 @@ public class Importer : AssetPostprocessor
             }
         }
     }
+    /*
     //データの比較
     bool DataComparison<T>(T obj1, T obj2) 
     {
@@ -84,13 +84,26 @@ public class Importer : AssetPostprocessor
         //クラスの変数を文字列化して比較したい
         foreach(FieldInfo field in type.GetFields()) 
         {
-            obj1Str = field.GetValue(obj1).ToString();
-            obj2Str = field.GetValue(obj2).ToString();
+
+            switch (field.GetValue(obj1)) 
+            {
+                case List<float> floatList:
+                    obj1Str = string.Join("", obj1);
+                    obj2Str = string.Join("", obj2);
+                    break;
+
+
+                default:
+                    obj1Str = field.GetValue(obj1).ToString();
+                    obj2Str = field.GetValue(obj2).ToString();
+                    break;
+            }
 
             if (!obj1Str.Equals(obj2Str)) return false;
         }        
         return true;
     }
+    */
 
     public void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedAssetPaths)
     {
@@ -116,19 +129,31 @@ public class Importer : AssetPostprocessor
                         BPM = int.Parse(data[3]),
                         numBeatsPerSegments = (int.Parse(data[4].Split('/')[0]), int.Parse(data[4].Split('/')[1])),
                         loopTimeMarkers = (int.Parse(data[5].Split(',')[0]), int.Parse(data[5].Split(',')[1])),
-                        SectionMarkers = data[6].Split(',').ToList().ConvertAll(a => float.Parse(a)),
+                        sectionMarkers = data[6].Split(',').ToList().ConvertAll(a => float.Parse(a)),
                         subTrackTimeMarkers = data.GetRange(7, data.Count - 7).Select(x => (float.Parse(x.Split(',')[0]), float.Parse(x.Split(',')[1]))).ToList()
                     };
                     bgmList.Params.Add(param);
 
                     //ここに比較処理を挟みたい
                     BGMList.Param checkedParam = Initialize<BGMList.Param>(param.dictKey);  //ファイル名がdictkeyのScriptableObjectの読込/生成
-                    bool isDataChanged = DataComparison<BGMList.Param>(param, checkedParam);
+                    bool isDataChanged = param.CompareParam(checkedParam);
                     if (!isDataChanged) 
                     {
                         checkedParam = param;
 
                         //TimelineAssetの生成
+                        TimelineAsset timeline = Initialize<TimelineAsset>(param.dictKey);
+                        AudioTrack[] audioTracks = timeline.GetRootTracks() as AudioTrack[];
+                        foreach (AudioTrack audioTrack in audioTracks)
+                        {
+                            timeline.DeleteTrack(audioTrack);
+                        }
+                        //AudioTrackの作成
+                        for(int i = 0; i <= param.subTrackTimeMarkers.Count; i++) 
+                        {
+                            timeline.CreateTrack<AudioTrack>();
+                        }
+                        audioTracks = timeline.GetRootTracks() as AudioTrack[];
                     }
                 }
             }
