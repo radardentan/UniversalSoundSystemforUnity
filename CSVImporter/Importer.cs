@@ -146,7 +146,7 @@ public class Importer : AssetPostprocessor
         //TimelineAssetの生成
         TimelineAsset timeline = Initialize<TimelineAsset>(param.dictKey);
         AudioTrack[] audioTracks = timeline.GetRootTracks() as AudioTrack[];
-        List<AudioClip> audioClips = LoadAll<AudioClip>("BGM/" + param.dictKey);
+        List<AudioClip> audioClips = LoadAll<AudioClip>("BGM/" + param.dictKey);    //ここでファイル名でソートさせる必要がありそう
         foreach (AudioTrack audioTrack in audioTracks)
         {
             timeline.DeleteTrack(audioTrack);
@@ -159,7 +159,26 @@ public class Importer : AssetPostprocessor
         audioTracks = timeline.GetRootTracks() as AudioTrack[];
         //AudioClipの割り当て
         //メイントラック
-        audioTracks[1].CreateClip(audioClips[1]);
-
+        audioTracks[0].CreateClip(audioClips[0]);
+        IEnumerable<TimelineClip> timelineClips = audioTracks[0].GetClips();
+        foreach(TimelineClip clip in timelineClips) 
+        {
+            clip.clipIn = 0;
+            clip.duration = audioClips[1].length;
+            clip.start = 0;
+        }
+        //サブトラックの割り当て
+        for (int i = 1; i <= param.subTrackTimeMarkers.Count; i++)
+        {
+            audioTracks[i].CreateClip(audioClips[i]);
+            timelineClips = audioTracks[i].GetClips();
+            foreach(TimelineClip clip in timelineClips) 
+            {
+                clip.clipIn = 0;
+                clip.duration = param.subTrackTimeMarkers[i - 1].endTime - param.subTrackTimeMarkers[i - 1].startTime;
+                clip.start = param.subTrackTimeMarkers[i - 1].startTime;
+            }
+        }
+        //ループマーカー・セクションマーカーの配置
     }
 }
