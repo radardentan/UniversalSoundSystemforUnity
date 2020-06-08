@@ -45,6 +45,18 @@ public class BGMList : ScriptableObject
             if (!numBeatsPerSegments.Equals(other.numBeatsPerSegments)) return false;
             return true;
         }
+
+        public Param() 
+        {
+            dictKey = null;
+            songTitle = null;
+            Tags = null;
+            BPM = 120;
+            numBeatsPerSegments = (4, 4);
+            loopTimeMarkers = (-1f, -1f);
+            sectionMarkers = null;
+            subTrackTimeMarkers = null;
+        }
     }
 }
 

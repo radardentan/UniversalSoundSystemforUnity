@@ -25,7 +25,7 @@ public class Importer : AssetPostprocessor
     }
 
     //データのScriptableObjectへの格納
-    IEnumerable<List<string>> ProcessingData<T>(string asset)
+    static IEnumerable<List<string>> ProcessingData<T>(string asset)
         where T : ScriptableObject
     {
 
@@ -73,37 +73,23 @@ public class Importer : AssetPostprocessor
             }
         }
     }
-    /*
-    //データの比較
-    bool DataComparison<T>(T obj1, T obj2) 
+
+    static List<T> LoadAll<T>(string directoryPath) 
+        where T : UnityEngine.Object
     {
-        Type type = obj1.GetType();
-        string obj1Str;
-        string obj2Str;
-
-        //クラスの変数を文字列化して比較したい
-        foreach(FieldInfo field in type.GetFields()) 
+        List<T> assetList = new List<T>();
+        IEnumerable<string> files = Directory.EnumerateFiles("Assets/" + directoryPath, "*", SearchOption.AllDirectories);
+        foreach (string filePath in files)
         {
-
-            switch (field.GetValue(obj1)) 
+            T asset = AssetDatabase.LoadAssetAtPath<T>(filePath);
+            if (asset != null)
             {
-                case List<float> floatList:
-                    obj1Str = string.Join("", obj1);
-                    obj2Str = string.Join("", obj2);
-                    break;
-
-
-                default:
-                    obj1Str = field.GetValue(obj1).ToString();
-                    obj2Str = field.GetValue(obj2).ToString();
-                    break;
+                assetList.Add(asset);
             }
-
-            if (!obj1Str.Equals(obj2Str)) return false;
-        }        
-        return true;
+        }
+        return assetList;
     }
-    */
+    
 
     public void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedAssetPaths)
     {
@@ -126,12 +112,17 @@ public class Importer : AssetPostprocessor
                         dictKey = data[0],
                         songTitle = data[1],
                         Tags = data[2].Split(',').ToList(),
-                        BPM = int.Parse(data[3]),
-                        numBeatsPerSegments = (int.Parse(data[4].Split('/')[0]), int.Parse(data[4].Split('/')[1])),
-                        loopTimeMarkers = (int.Parse(data[5].Split(',')[0]), int.Parse(data[5].Split(',')[1])),
-                        sectionMarkers = data[6].Split(',').ToList().ConvertAll(a => float.Parse(a)),
-                        subTrackTimeMarkers = data.GetRange(7, data.Count - 7).Select(x => (float.Parse(x.Split(',')[0]), float.Parse(x.Split(',')[1]))).ToList()
+                        BPM = int.Parse(data[3]),              
                     };
+                    if (data.Count < 4) continue;
+                    param.numBeatsPerSegments = (int.Parse(data[4].Split('/')[0]), int.Parse(data[4].Split('/')[1]));
+                    if (data.Count < 5) continue;
+                    param.loopTimeMarkers = (int.Parse(data[5].Split(',')[0]), int.Parse(data[5].Split(',')[1]));
+                    if (data.Count < 6) continue;
+                    param.sectionMarkers = data[6].Split(',').ToList().ConvertAll(a => float.Parse(a));
+                    if (data.Count < 7) continue;
+                    param.subTrackTimeMarkers = data.GetRange(7, data.Count - 6).Select(x => (float.Parse(x.Split(',')[0]), float.Parse(x.Split(',')[1]))).ToList();
+
                     bgmList.Params.Add(param);
 
                     //ここに比較処理を挟みたい
@@ -140,56 +131,35 @@ public class Importer : AssetPostprocessor
                     if (!isDataChanged) 
                     {
                         checkedParam = param;
-
-                        //TimelineAssetの生成
-                        TimelineAsset timeline = Initialize<TimelineAsset>(param.dictKey);
-                        AudioTrack[] audioTracks = timeline.GetRootTracks() as AudioTrack[];
-                        foreach (AudioTrack audioTrack in audioTracks)
-                        {
-                            timeline.DeleteTrack(audioTrack);
-                        }
-                        //AudioTrackの作成
-                        for(int i = 0; i <= param.subTrackTimeMarkers.Count; i++) 
-                        {
-                            timeline.CreateTrack<AudioTrack>();
-                        }
-                        audioTracks = timeline.GetRootTracks() as AudioTrack[];
+                        BGMTimelineCreater(param);                        
                     }
                 }
             }
 
-
-            /*将来的にc#8.0で以下の様に書けるようになる
-             
-            Action action = targetFile switch
-            {
-                "BGMList" => (() =>
-                {
-                    BGMList bgmList = Initialize<BGMList>();
-                    bgmList.Params.Clear();
-                    ProcessingData<BGMList>(() =>
-                    {
-                        BGMList.Param param = new BGMList.Param()
-                        {
-
-                        };
-                        bgmList.Params.Add(param);
-                    });
-                }),
-                "SEList" => (() =>
-                {
-
-                }),
-                "BGSList" => (() =>
-                {
-
-                }),
-                _ => (() => { }) //破棄パターンでは何もしない
-            };
-            */
-
             AssetDatabase.SaveAssets();
             Debug.Log(targetFile + "の読込/更新が完了しました。");
         }
+    }
+
+    void BGMTimelineCreater(BGMList.Param param) 
+    {
+        //TimelineAssetの生成
+        TimelineAsset timeline = Initialize<TimelineAsset>(param.dictKey);
+        AudioTrack[] audioTracks = timeline.GetRootTracks() as AudioTrack[];
+        List<AudioClip> audioClips = LoadAll<AudioClip>("BGM/" + param.dictKey);
+        foreach (AudioTrack audioTrack in audioTracks)
+        {
+            timeline.DeleteTrack(audioTrack);
+        }
+        //AudioTrackの作成
+        for (int i = 0; i <= param.subTrackTimeMarkers.Count; i++)
+        {
+            timeline.CreateTrack<AudioTrack>();
+        }
+        audioTracks = timeline.GetRootTracks() as AudioTrack[];
+        //AudioClipの割り当て
+        //メイントラック
+        audioTracks[1].CreateClip(audioClips[1]);
+
     }
 }
