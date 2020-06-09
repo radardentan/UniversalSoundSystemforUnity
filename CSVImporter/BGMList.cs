@@ -1,9 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System;
-using System.Reflection;
 using UnityEngine;
-using TMPro;
 
 public class BGMList : ScriptableObject
 {

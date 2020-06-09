@@ -172,6 +172,7 @@ public class Importer : AssetPostprocessor
         {
             audioTracks[i].CreateClip(audioClips[i]);
             timelineClips = audioTracks[i].GetClips();
+
             foreach(TimelineClip clip in timelineClips) 
             {
                 clip.clipIn = 0;
@@ -180,5 +181,6 @@ public class Importer : AssetPostprocessor
             }
         }
         //ループマーカー・セクションマーカーの配置
+
     }
 }

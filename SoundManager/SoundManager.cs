@@ -21,7 +21,7 @@ public class SoundManager : MonoBehaviour
             return _instance;
         }
     }
-    [RuntimeInitializeOnLoadMethod]public static void LoadInstance() 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]public static void LoadInstance() 
     {
         _instance = Instance;
     }
