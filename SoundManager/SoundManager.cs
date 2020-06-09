@@ -21,6 +21,10 @@ public class SoundManager : MonoBehaviour
             return _instance;
         }
     }
+    [RuntimeInitializeOnLoadMethod]public static void LoadInstance() 
+    {
+        _instance = Instance;
+    }
 
     AudioMixer masterBus;
     BGMList bgmList;
@@ -73,8 +77,6 @@ public class SoundManager : MonoBehaviour
     {
         masterBus = Resources.Load("AudioMasterBus") as AudioMixer;
         SetDuckVolume(duckVolumeRate);
-        bgmList = Resources.Load("BGM/BGMList") as BGMList;
-        bgmLanes = Resources.LoadAll("BGMTimeLline") as TimelineAsset[];
     }
 
 }
