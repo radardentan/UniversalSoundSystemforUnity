@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-public class LoopEndMarkerReceiver : MonoBehaviour, INotificationReceiver
+public class SectionMarkerReceiver : MonoBehaviour, INotificationReceiver
 {
     public void OnNotify(Playable origin, INotification notification, object context) 
     {
@@ -12,7 +12,7 @@ public class LoopEndMarkerReceiver : MonoBehaviour, INotificationReceiver
     }
 }
 
-public class LoopEndMarker : Marker, INotification 
+public class SectionMarker : Marker, INotification 
 {
     public PropertyName id { get; }
 }

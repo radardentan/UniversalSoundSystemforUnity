@@ -16,9 +16,9 @@ public class BGMList : ScriptableObject
         public int BPM;
         public (int beats, int segments) numBeatsPerSegments;
 
-        public (float loopStartTime, float loopEndTime) loopTimeMarkers;
-        public List<float> sectionMarkers;
-        public List<(float startTime, float endTime)> subTrackTimeMarkers;
+        public (double loopStartTime, double loopEndTime) loopTimeMarkers;
+        public List<double> sectionMarkers;
+        public List<(double startTime, double endTime)> subTrackTimeMarkers;
 
         public bool CompareParam(Param other) 
         {
@@ -51,7 +51,7 @@ public class BGMList : ScriptableObject
             Tags = null;
             BPM = 120;
             numBeatsPerSegments = (4, 4);
-            loopTimeMarkers = (-1f, -1f);
+            loopTimeMarkers = (-1d, -1d);
             sectionMarkers = null;
             subTrackTimeMarkers = null;
         }

@@ -119,9 +119,9 @@ public class Importer : AssetPostprocessor
                     if (data.Count < 5) continue;
                     param.loopTimeMarkers = (int.Parse(data[5].Split(',')[0]), int.Parse(data[5].Split(',')[1]));
                     if (data.Count < 6) continue;
-                    param.sectionMarkers = data[6].Split(',').ToList().ConvertAll(a => float.Parse(a));
+                    param.sectionMarkers = data[6].Split(',').ToList().ConvertAll(a => double.Parse(a));
                     if (data.Count < 7) continue;
-                    param.subTrackTimeMarkers = data.GetRange(7, data.Count - 6).Select(x => (float.Parse(x.Split(',')[0]), float.Parse(x.Split(',')[1]))).ToList();
+                    param.subTrackTimeMarkers = data.GetRange(7, data.Count - 6).Select(x => (double.Parse(x.Split(',')[0]), double.Parse(x.Split(',')[1]))).ToList();
 
                     bgmList.Params.Add(param);
 
@@ -141,7 +141,7 @@ public class Importer : AssetPostprocessor
         }
     }
 
-    void BGMTimelineCreater(BGMList.Param param) 
+    static void BGMTimelineCreater(BGMList.Param param) 
     {
         //TimelineAssetの生成
         TimelineAsset timeline = Initialize<TimelineAsset>(param.dictKey);
@@ -167,11 +167,25 @@ public class Importer : AssetPostprocessor
             clip.duration = audioClips[1].length;
             clip.start = 0;
         }
+        timeline.CreateMarkerTrack();
+        //ループマーカーの追加
+        timeline.markerTrack.CreateMarker(typeof(LoopStartMarker), param.loopTimeMarkers.loopStartTime);
+        timeline.markerTrack.CreateMarker(typeof(LoopEndMarker), param.loopTimeMarkers.loopEndTime);
+        //セクションマーカーの追加
+        if(param.sectionMarkers.Count > 0) 
+        {
+            foreach(double sectionmarker in param.sectionMarkers) 
+            {
+                timeline.markerTrack.CreateMarker(typeof(SectionMarker), sectionmarker);
+            }
+        }
+        if (param.subTrackTimeMarkers.Count <= 0) return;
         //サブトラックの割り当て
         for (int i = 1; i <= param.subTrackTimeMarkers.Count; i++)
         {
             audioTracks[i].CreateClip(audioClips[i]);
             timelineClips = audioTracks[i].GetClips();
+
 
             foreach(TimelineClip clip in timelineClips) 
             {
@@ -180,7 +194,5 @@ public class Importer : AssetPostprocessor
                 clip.start = param.subTrackTimeMarkers[i - 1].startTime;
             }
         }
-        //ループマーカー・セクションマーカーの配置
-
     }
 }
