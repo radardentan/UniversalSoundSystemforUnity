@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
 public class SoundManager : MonoBehaviour
@@ -27,56 +28,57 @@ public class SoundManager : MonoBehaviour
     }
 
     AudioMixer masterBus;
-    BGMList bgmList;
-    TimelineAsset[] bgmLanes;
     
 
     [SerializeField] const float duckVolumeRate = 0.5f;
 
-    void SetVolume(float _volume, string _busName)
+    public void SetVolume(float _volume, string _busName)
     {
         float volumeDB = (float)(20.0d * Mathf.Log10(_volume));
         masterBus.SetFloat(_busName, Mathf.Clamp(volumeDB, -80.0f, 0.0f));
     }
 
-    void SetDuckVolume(float _volumeRate)
+    public void SetDuckVolume(float _volumeRate)
     {
         float duckVolume = Mathf.Clamp01(_volumeRate * duckVolumeRate);
         float duckVolumeDB = (float)(20.0d * Mathf.Clamp(duckVolume, -80.0f, 0.0f));
         masterBus.SetFloat("DuckVolume", duckVolumeDB);
     }
 
-    SortedList<string, List<AudioSource>> loadedBGMList;
-    void BGMLoad(string dictKey) 
-    {
-        AudioClip[] audioClips = Resources.LoadAll("BGM" + dictKey) as AudioClip[];
-        List<AudioSource> audioSources = new List<AudioSource>();
-        foreach(AudioClip audioClip in audioClips) 
-        {
-            AudioSource audioSource = gameObject.AddComponent<AudioSource>();
-            audioSource.clip = audioClip;
-            audioSources.Add(audioSource);
-        }
-        loadedBGMList.Add(dictKey, audioSources);
-    }
-
+    PlayableDirector[] playableDirectors;
     int flip = 0;
-    void PlayBGM(string dictKey) 
-    {
-        if(loadedBGMList.Count == 0) //現在BGMが鳴っていないとき
-        {
 
-        }
-        else 
-        {
-
-        }
+    public void BGMPlay(string dictKey) 
+    {   
+        //再生中のBGMを止める
+        
+        //BGMを読み込んで再生
+        TimelineAsset timeline = SetBGM(dictKey);
+        playableDirectors[flip].playableAsset = timeline;
+        playableDirectors[flip].Play();
+        flip = 1 - flip;
+        
     }
+    public void BGMStop() 
+    {
+        //クロスフェードさせて止める
+    }
+
+    TimelineAsset SetBGM(string dictKey) 
+    {
+        //TimelineAssetを何らかの方法で読み込む
+        TimelineAsset timeline = null;
+        return timeline;
+
+    } 
+
 
     void Awake()
     {
         masterBus = Resources.Load("AudioMasterBus") as AudioMixer;
         SetDuckVolume(duckVolumeRate);
+        playableDirectors = new PlayableDirector[2];
+
     }
 
 }

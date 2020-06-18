@@ -11,13 +11,13 @@ public class BGMListFormatter
         bgmList.Params.Clear();
         foreach (List<string> data in CSVParser.ProcessingData<BGMList>(asset))
         {
-            BGMList.Param param = new BGMList.Param()
-            {
-                dictKey = data[0],
-                songTitle = data[1],
-                Tags = data[2].Split(',').ToList(),
-                BPM = int.Parse(data[3]),
-            };
+            BGMList.Param param = ScriptableObject.CreateInstance<BGMList.Param>();
+
+            param.dictKey = data[0];
+            param.songTitle = data[1];
+            param.Tags = data[2].Split(',').ToList();
+            param.BPM = int.Parse(data[3]);
+            
             if (data.Count < 4) continue;
             param.numBeatsPerSegments = (int.Parse(data[4].Split('/')[0]), int.Parse(data[4].Split('/')[1]));
             if (data.Count < 5) continue;
